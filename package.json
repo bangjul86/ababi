@@ -12,6 +12,7 @@
     "addresses.json"
   ],
   "dependencies": {
+    "@types/lodash": "^4.14.191",
     "console-table-printer": "^2.11.1",
     "ethers": "^5.6.0"
   },
