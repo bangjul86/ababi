@@ -4,7 +4,7 @@ import { updateItemValue, writeConfig } from '../../cli/config'
 import YAML from 'yaml'
 
 import { confirm } from '../../cli/helpers'
-import { NetworkContracts } from '../../cli/contracts'
+import { GraphNetworkContracts } from '../../sdk/deployments/network'
 
 interface Contract {
   name: string
@@ -133,7 +133,7 @@ task('update-config', 'Update graph config parameters with onchain data')
   })
 
 const updateGeneralParams = async (
-  contracts: NetworkContracts,
+  contracts: GraphNetworkContracts,
   param: GeneralParam,
   config: YAML.Document.Parsed,
 ) => {
@@ -145,7 +145,7 @@ const updateGeneralParams = async (
 }
 
 const updateContractParams = async (
-  contracts: NetworkContracts,
+  contracts: GraphNetworkContracts,
   contract: Contract,
   config: YAML.Document.Parsed,
 ) => {

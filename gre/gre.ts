@@ -2,8 +2,8 @@ import { HardhatConfig, HardhatRuntimeEnvironment, HardhatUserConfig } from 'har
 import { extendConfig, extendEnvironment } from 'hardhat/config'
 import { lazyFunction, lazyObject } from 'hardhat/plugins'
 
-import { getAddressBook } from '../cli/address-book'
-import { loadContracts } from '../cli/contracts'
+import { getAddressBook } from '../sdk/lib/deployment/address-book'
+import { loadContracts } from '../sdk/lib/deployment/contract'
 import { readConfig } from '../cli/config'
 import {
   GraphNetworkEnvironment,
@@ -180,7 +180,7 @@ function buildGraphNetworkEnvironment(
     addressBook: lazyObject(() => getAddressBook(addressBookPath, chainId.toString())),
     graphConfig: lazyObject(() => readConfig(graphConfigPath, true)),
     contracts: lazyObject(() =>
-      loadContracts(getAddressBook(addressBookPath, chainId.toString()), chainId, provider),
+      loadContracts(getAddressBook(addressBookPath, chainId.toString()), provider),
     ),
     getWallets: lazyFunction(() => () => getWallets()),
     getWallet: lazyFunction(() => (address: string) => getWallet(address)),

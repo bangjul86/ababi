@@ -1,7 +1,7 @@
 import { ContractTransaction } from 'ethers'
 import { task } from 'hardhat/config'
 import { cliOpts } from '../../cli/defaults'
-import { chainIdIsL2 } from '../../cli/cross-chain'
+import { isGraphL2ChainId } from '../../sdk/lib/cross-chain'
 
 task('migrate:sync', 'Sync controller contracts')
   .addParam('addressBook', cliOpts.addressBook.description, cliOpts.addressBook.default)
@@ -14,7 +14,7 @@ task('migrate:sync', 'Sync controller contracts')
     const deployer = await getDeployer()
 
     const chainId = hre.network.config.chainId?.toString() ?? '1337'
-    const isL2 = chainIdIsL2(chainId)
+    const isL2 = isGraphL2ChainId(chainId)
 
     // Sync contracts
     console.log(
