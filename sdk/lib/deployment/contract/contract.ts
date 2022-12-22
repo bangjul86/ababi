@@ -1,4 +1,4 @@
-import { BaseContract, Contract, providers, Signer } from 'ethers'
+import { Contract, providers, Signer } from 'ethers'
 
 import { AddressBook } from '../address-book'
 import { loadArtifact } from '../artifacts'
@@ -17,7 +17,7 @@ export function loadContract(
   addressBook: AddressBook,
   signerOrProvider?: Signer | providers.Provider,
   enableTxLogging = true,
-): BaseContract {
+): Contract {
   const contractEntry = addressBook.getEntry(contractName)
 
   try {
@@ -39,12 +39,14 @@ export function loadContract(
   }
 }
 
-export const loadContracts = (
+export type ContractList<T extends string = string> = Record<T, Contract>
+
+export const loadContracts = <T extends string = string>(
   addressBook: AddressBook,
   signerOrProvider?: Signer | providers.Provider,
   enableTXLogging = true,
-): Record<string, BaseContract> => {
-  const contracts = {}
+): ContractList<T> => {
+  const contracts = {} as ContractList<T>
   for (const contractName of addressBook.listEntries()) {
     const contract = loadContract(contractName, addressBook, signerOrProvider, enableTXLogging)
     contracts[contractName] = contract

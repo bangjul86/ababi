@@ -20,11 +20,17 @@ export type AddressBookEntry = {
   libraries?: { [libraryName: string]: string }
 }
 
-export type AddressBookJson = {
-  [chainId: string]: {
-    [contractName: string]: AddressBookEntry
-  }
-}
+// JSON format:
+// {
+//   "ChainId": {
+//     "ContractName": {}
+//     ...
+//    }
+// }
+export type AddressBookJson<
+  ChainId extends string = string,
+  ContractName extends string = string,
+> = Record<ChainId, Record<ContractName, AddressBookEntry>>
 
 export const getAddressBook = (path: string, chainId: string | number): AddressBook => {
   if (!path) throw new Error(`A path to the address book file is required.`)
@@ -48,7 +54,7 @@ export const getAddressBook = (path: string, chainId: string | number): AddressB
     try {
       return addressBook[chainId][contractName]
     } catch (e) {
-      return { address: '0x0000000000000000000000000000000000000000' }
+      return { address: '0x0000000000000000000000000000000000000000' } // Don't use ethers.constants.AddressZero to avoid costly import
     }
   }
 

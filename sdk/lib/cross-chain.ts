@@ -89,32 +89,32 @@ export const l2ChainNames: GraphL2ChainName[] = ChainList.map((c) => c.l2.name)
 export const chainNames: GraphChainName[] = [...l1ChainNames, ...l2ChainNames]
 
 // L1 <> L2
-export const l1ToL2 = (chainId: number): number | undefined => {
+export const l1ToL2 = (chainId: number): GraphChainId | undefined => {
   if (!isGraphChainId(chainId)) return
   const pair: GraphChainPair | undefined = ChainList.find((cp) => cp.l1.id === chainId)
   return pair ? pair.l2.id : undefined
 }
-export const l2ToL1 = (chainId: number): number | undefined => {
+export const l2ToL1 = (chainId: number): GraphChainId | undefined => {
   if (!isGraphChainId(chainId)) return
   const pair: GraphChainPair | undefined = ChainList.find((cp) => cp.l2.id === chainId)
   return pair ? pair.l1.id : undefined
 }
-export const counterpart = (chainId: number): number | undefined => {
+export const counterpart = (chainId: number): GraphChainId | undefined => {
   if (!isGraphChainId(chainId)) return
   return isGraphL1ChainId(chainId) ? l1ToL2(chainId) : l2ToL1(chainId)
 }
 
-export const l1ToL2Name = (name: string): string | undefined => {
+export const l1ToL2Name = (name: string): GraphChainName | undefined => {
   if (!isGraphChainName(name)) return
   const pair: GraphChainPair | undefined = ChainList.find((cp) => cp.l1.name === name)
   return pair ? pair.l2.name : undefined
 }
-export const l2ToL1Name = (name: string): string | undefined => {
+export const l2ToL1Name = (name: string): GraphChainName | undefined => {
   if (!isGraphChainName(name)) return
   const pair: GraphChainPair | undefined = ChainList.find((cp) => cp.l2.name === name)
   return pair ? pair.l1.name : undefined
 }
-export const counterpartName = (name: string): string | undefined => {
+export const counterpartName = (name: string): GraphChainName | undefined => {
   if (!isGraphChainName(name)) return
   return isGraphL1ChainName(name) ? l1ToL2Name(name) : l2ToL1Name(name)
 }
