@@ -7,7 +7,6 @@ import { utils, BigNumber, Contract } from 'ethers'
 import { NonceManager } from '@ethersproject/experimental'
 
 import { logger } from '../logging'
-import { sendTransaction } from '../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../env'
 import { confirm } from '../helpers'
 
@@ -199,10 +198,7 @@ export const airdrop = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<vo
         totalAmount,
       )} tokens (${totalAmount} wei)`,
     )
-    await sendTransaction(cli.wallet, graphToken, 'approve', [
-      disperseContract.address,
-      totalAmount,
-    ])
+    await graphToken.connect(cli.wallet).approve(disperseContract.address, totalAmount)
   }
 
   // Distribute
@@ -229,11 +225,10 @@ export const airdrop = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<vo
         )
       }
       try {
-        const receipt = await sendTransaction(nonceManager, disperseContract, 'disperseToken', [
-          graphToken.address,
-          addressList,
-          amountList,
-        ])
+        const tx = await disperseContract
+          .connect(nonceManager)
+          .disperseToken(graphToken.address, addressList, amountList)
+        const receipt = await cli.wallet.provider.waitForTransaction(tx.hash)
         saveResumeList(cliArgs.resumefile, receipt.transactionHash, batch)
       } catch (err) {
         logger.error(`Failed to send #${batchNum}`, err)

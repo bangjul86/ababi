@@ -1,11 +1,18 @@
-import { GraphChainId, isGraphL1ChainId } from '../../lib/cross-chain'
-import { assertObject } from '../../lib/deployment/utils'
+import { providers, Signer } from 'ethers'
+
+import { getAddressBook } from '../../lib/deployment/address-book'
+import { loadContracts } from '../../lib/deployment/contract'
+import { GraphChainId, isGraphChainId, isGraphL1ChainId } from '../../lib/cross-chain'
+import { assertObject } from '../../lib/utils'
 import {
   GraphNetworkL1ContractNameList,
   GraphNetworkL2ContractNameList,
   GraphNetworkSharedContractNameList,
   isGraphNetworkContractName,
 } from './contract-list'
+
+import { assertGraphNetworkAddressBook } from './address-book'
+import { GraphNetworkContractName } from './contract-list'
 
 // Get contract types from built artifacts
 // TODO: this needs to be imported from published npm package once we make the sdk a standalone package
@@ -89,4 +96,21 @@ export function assertGraphNetworkContracts(
       throw new Error(`Missing GraphNetworkContract ${contractName} for chainId ${chainId}`)
     }
   }
+}
+
+export function loadGraphNetworkContracts(
+  addressBookPath: string,
+  chainId: number,
+  signerOrProvider?: Signer | providers.Provider,
+): GraphNetworkContracts {
+  if (!isGraphChainId(chainId)) {
+    throw new Error(`ChainId not supported: ${chainId}`)
+  }
+  const addressBook = getAddressBook(addressBookPath, chainId)
+  assertGraphNetworkAddressBook(addressBook.json)
+
+  const contracts = loadContracts<GraphNetworkContractName>(addressBook, signerOrProvider, true)
+  assertGraphNetworkContracts(contracts, chainId)
+
+  return contracts
 }

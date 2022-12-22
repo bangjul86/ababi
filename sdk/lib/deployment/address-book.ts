@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { assertObject } from './utils'
+import { assertObject } from '../utils'
 
 export interface AddressBook {
   listEntries: () => Array<string>

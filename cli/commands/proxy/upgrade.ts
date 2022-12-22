@@ -1,7 +1,8 @@
 import yargs, { Argv } from 'yargs'
 
 import { logger } from '../../logging'
-import { getContractAt, isContractDeployed, sendTransaction } from '../../network'
+import { getContractAt } from '../../../sdk/lib/deployment/contract'
+import { isContractDeployed } from '../../../sdk/lib/deployment/deploy'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { confirm } from '../../helpers'
 
@@ -39,6 +40,7 @@ export const upgradeProxy = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promi
   // Check if contract already deployed
   const isDeployed = await isContractDeployed(
     contractName,
+    'GraphProxy',
     savedAddress,
     cli.addressBook,
     cli.wallet.provider,
@@ -108,10 +110,8 @@ export const upgradeProxy = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promi
       )
     }
   } else {
-    const receipt = await sendTransaction(cli.wallet, proxyAdmin, 'upgrade', [
-      proxy.address,
-      implAddress,
-    ])
+    const tx = await proxyAdmin.connect(cli.wallet).upgrade(proxy.address, implAddress)
+    const receipt = await cli.wallet.provider.waitForTransaction(tx.hash)
     if (receipt.status == 1) {
       logger.info('> upgrade() tx successful!')
     } else {
@@ -122,13 +122,11 @@ export const upgradeProxy = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promi
     // Accept upgrade from the implementation
     if (initArgs) {
       const initTx = await contract.populateTransaction.initialize(...initArgs.split(','))
-      await sendTransaction(cli.wallet, proxyAdmin, 'acceptProxyAndCall', [
-        implAddress,
-        proxy.address,
-        initTx.data,
-      ])
+      await proxyAdmin
+        .connect(cli.wallet)
+        .acceptProxyAndCall(implAddress, proxy.address, initTx.data)
     } else {
-      await sendTransaction(cli.wallet, proxyAdmin, 'acceptProxy', [implAddress, proxy.address])
+      await proxyAdmin.connect(cli.wallet).acceptProxy(implAddress, proxy.address)
     }
   }
 

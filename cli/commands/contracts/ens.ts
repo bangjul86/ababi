@@ -1,7 +1,6 @@
 import yargs, { Argv } from 'yargs'
 import { utils } from 'ethers'
 
-import { sendTransaction } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { logger } from '../../logging'
 
@@ -15,12 +14,15 @@ export const registerTestName = async (cli: CLIEnvironment, cliArgs: CLIArgs): P
   const label = utils.keccak256(utils.toUtf8Bytes(normalizedName))
   logger.info(`Namehash for ${labelNameFull}: ${labelHashFull}`)
   logger.info(`Registering ${name} with ${cli.walletAddress} on the test registrar`)
-  await sendTransaction(cli.wallet, testRegistrar, 'register', [label, cli.walletAddress])
+  await testRegistrar.connect(cli.wallet).register(label, cli.walletAddress)
 }
 export const checkOwner = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const name = cliArgs.name
   const ens = cli.contracts.IENS
   const node = nameToNode(name)
+  if (!ens) {
+    throw new Error('ENS contract not found')
+  }
   const res = await ens.owner(node)
   logger.info(`owner = ${res}`)
 }

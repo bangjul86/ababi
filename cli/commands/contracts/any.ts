@@ -2,7 +2,7 @@ import yargs, { Argv } from 'yargs'
 import { ContractFunction } from 'ethers'
 
 import { logger } from '../../logging'
-import { getContractAt, sendTransaction } from '../../network'
+import { getContractAt } from '../../../sdk/lib/deployment/contract'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 export const any = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -19,7 +19,7 @@ export const any = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> 
     logger.info(`${func} = ${value}`)
   } else if (cliArgs.type == 'set') {
     logger.info(`Setting ${func}...`)
-    await sendTransaction(cli.wallet, attachedContract, func, params)
+    await attachedContract.connect(cli.wallet)[func](...params)
   }
 }
 

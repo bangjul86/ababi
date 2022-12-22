@@ -1,15 +1,16 @@
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { logger } from '../../logging'
-import { getAddressBook } from '../../address-book'
-import { getProvider, sendTransaction, toGRT } from '../../network'
-import { chainIdIsL2 } from '../../cross-chain'
-import { loadAddressBookContract } from '../../contracts'
 import { L2TransactionReceipt, L2ToL1MessageStatus, L2ToL1MessageWriter } from '@arbitrum/sdk'
 import { L2GraphTokenGateway } from '../../../build/types/L2GraphTokenGateway'
 import { BigNumber } from 'ethers'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { providers } from 'ethers'
 import { L2GraphToken } from '../../../build/types/L2GraphToken'
+
+import { getAddressBook } from '../../../sdk/lib/deployment/address-book'
+import { toGRT } from '../../../sdk/lib/utils'
+import { loadContract } from '../../../sdk/lib/deployment/contract'
+import { isGraphL1ChainId, isGraphL2ChainId } from '../../../sdk/lib/cross-chain'
 
 const FOURTEEN_DAYS_IN_SECONDS = 24 * 3600 * 14
 
@@ -61,10 +62,10 @@ const waitUntilOutboxEntryCreatedWithCb = async (
 
 export const startSendToL1 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   logger.info(`>>> Sending tokens to L1 <<<\n`)
-  const l2Provider = getProvider(cliArgs.l2ProviderUrl)
+  const l2Provider = new providers.JsonRpcProvider(cliArgs.l2ProviderUrl)
   const l2ChainId = (await l2Provider.getNetwork()).chainId
 
-  if (chainIdIsL2(cli.chainId) || !chainIdIsL2(l2ChainId)) {
+  if (isGraphL2ChainId(cli.chainId) || isGraphL1ChainId(l2ChainId)) {
     throw new Error(
       'Please use an L1 provider in --provider-url, and an L2 provider in --l2-provider-url',
     )
@@ -77,10 +78,17 @@ export const startSendToL1 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Prom
   const l2Wallet = cli.wallet.connect(l2Provider)
   const l2AddressBook = getAddressBook(cliArgs.addressBook, l2ChainId.toString())
 
-  const gateway = loadAddressBookContract('L2GraphTokenGateway', l2AddressBook, l2Wallet)
-  const l2GRT = loadAddressBookContract('L2GraphToken', l2AddressBook, l2Wallet) as L2GraphToken
+  const gateway = loadContract(
+    'L2GraphTokenGateway',
+    l2AddressBook,
+    l2Wallet,
+  ) as L2GraphTokenGateway
+  const l2GRT = loadContract('L2GraphToken', l2AddressBook, l2Wallet) as L2GraphToken
 
   const l1Gateway = cli.contracts['L1GraphTokenGateway']
+  if (!l1Gateway) {
+    throw new Error('L1 gateway not found in address book')
+  }
   logger.info(`Will send ${cliArgs.amount} GRT to ${recipient}`)
   logger.info(`Using L2 gateway ${gateway.address} and L1 gateway ${l1Gateway.address}`)
 
@@ -89,16 +97,13 @@ export const startSendToL1 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Prom
     throw new Error('Sender balance is insufficient for the transfer')
   }
 
-  const params = [l1GRTAddress, recipient, amount, '0x']
   logger.info('Approving token transfer')
-  await sendTransaction(l2Wallet, l2GRT, 'approve', [gateway.address, amount])
+  await l2GRT.connect(l2Wallet).approve(gateway.address, amount)
   logger.info('Sending outbound transfer transaction')
-  const receipt = await sendTransaction(
-    l2Wallet,
-    gateway,
-    'outboundTransfer(address,address,uint256,bytes)',
-    params,
-  )
+  const tx = await gateway
+    .connect(l2Wallet)
+    ['outboundTransfer(address,address,uint256,bytes)'](l1GRTAddress, recipient, amount, '0x')
+  const receipt = await l2Wallet.provider.waitForTransaction(tx.hash)
   const l2Receipt = new L2TransactionReceipt(receipt)
   const l2ToL1Message = (await l2Receipt.getL2ToL1Messages(cli.wallet))[0]
 
@@ -122,10 +127,10 @@ export const finishSendToL1 = async (
   wait: boolean,
 ): Promise<void> => {
   logger.info(`>>> Finishing transaction sending tokens to L1 <<<\n`)
-  const l2Provider = getProvider(cliArgs.l2ProviderUrl)
+  const l2Provider = new providers.JsonRpcProvider(cliArgs.l2ProviderUrl)
   const l2ChainId = (await l2Provider.getNetwork()).chainId
 
-  if (chainIdIsL2(cli.chainId) || !chainIdIsL2(l2ChainId)) {
+  if (isGraphL2ChainId(cli.chainId) || isGraphL1ChainId(l2ChainId)) {
     throw new Error(
       'Please use an L1 provider in --provider-url, and an L2 provider in --l2-provider-url',
     )
@@ -133,7 +138,7 @@ export const finishSendToL1 = async (
 
   const l2AddressBook = getAddressBook(cliArgs.addressBook, l2ChainId.toString())
 
-  const gateway = loadAddressBookContract(
+  const gateway = loadContract(
     'L2GraphTokenGateway',
     l2AddressBook,
     l2Provider,

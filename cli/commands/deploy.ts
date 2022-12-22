@@ -1,12 +1,12 @@
 import yargs, { Argv } from 'yargs'
 
 import {
-  getContractAt,
   deployContract,
   deployContractAndSave,
   deployContractWithProxy,
   deployContractWithProxyAndSave,
-} from '../network'
+} from '../../sdk/lib/deployment/deploy'
+import { getContractAt } from '../../sdk/lib/deployment/contract'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../env'
 import { logger } from '../logging'
 import { confirm } from '../helpers'
@@ -43,6 +43,7 @@ export const deploy = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<voi
 
       logger.info(`Deploying contract ${contractName} with proxy ...`)
       await deployContractWithProxy(
+        'GraphProxy',
         proxyAdmin,
         contractName,
         contractArgs,
@@ -53,7 +54,9 @@ export const deploy = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<voi
     case 'deploy-with-proxy-save':
       logger.info(`Deploying contract ${contractName} with proxy and saving to address book...`)
       await deployContractWithProxyAndSave(
+        'GraphProxyAdmin',
         contractName,
+        'GraphProxy',
         contractArgs,
         cli.wallet,
         cli.addressBook,

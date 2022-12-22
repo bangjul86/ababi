@@ -1,7 +1,7 @@
 import Table from 'cli-table'
 
 import { logger } from '../../logging'
-import { getContractAt } from '../../network'
+import { getContractAt } from '../../../sdk/lib/deployment/contract'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 export const listProxies = async (cli: CLIEnvironment): Promise<void> => {

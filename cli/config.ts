@@ -2,7 +2,7 @@ import fs from 'fs'
 import YAML from 'yaml'
 import { Scalar, YAMLMap } from 'yaml/types'
 
-import { AddressBook } from './address-book'
+import { AddressBook } from '../sdk/lib/deployment/address-book'
 import { CLIEnvironment } from './env'
 
 const ABRefMatcher = /\${{([A-Z]\w.+)}}/

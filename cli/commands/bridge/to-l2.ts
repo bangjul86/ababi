@@ -1,11 +1,12 @@
 import { Argv } from 'yargs'
-import { utils } from 'ethers'
+import { providers, utils } from 'ethers'
 import { L1TransactionReceipt, L1ToL2MessageStatus, L1ToL2MessageWriter } from '@arbitrum/sdk'
 
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { logger } from '../../logging'
-import { getProvider, sendTransaction, toGRT, ensureAllowance, toBN } from '../../network'
-import { chainIdIsL2, estimateRetryableTxGas } from '../../cross-chain'
+import { toGRT, toBN, ensureAllowance } from '../../../sdk/lib/utils'
+import { isGraphL1ChainId, isGraphL2ChainId } from '../../../sdk/lib/cross-chain'
+import { estimateRetryableTxGas } from '../../../sdk/lib/arbitrum'
 
 const logAutoRedeemReason = (autoRedeemRec) => {
   if (autoRedeemRec == null) {
@@ -46,10 +47,12 @@ export const sendToL2 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
   // parse provider
   const l1Provider = cli.wallet.provider
   // TODO: fix this hack for usage with hardhat
-  const l2Provider = cliArgs.l2Provider ? cliArgs.l2Provider : getProvider(cliArgs.l2ProviderUrl)
+  const l2Provider = cliArgs.l2Provider
+    ? cliArgs.l2Provider
+    : new providers.JsonRpcProvider(cliArgs.l2ProviderUrl)
   const l1ChainId = cli.chainId
   const l2ChainId = (await l2Provider.getNetwork()).chainId
-  if (chainIdIsL2(l1ChainId) || !chainIdIsL2(l2ChainId)) {
+  if (isGraphL2ChainId(l1ChainId) || isGraphL1ChainId(l2ChainId)) {
     throw new Error(
       'Please use an L1 provider in --provider-url, and an L2 provider in --l2-provider-url',
     )
@@ -97,10 +100,12 @@ export const sendToL2 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
   // build transaction
   logger.info('Sending outbound transfer transaction')
   const txData = utils.defaultAbiCoder.encode(['uint256', 'bytes'], [maxSubmissionCost, calldata])
-  const txParams = [l1GRT.address, recipient, amount, maxGas, gasPriceBid, txData]
-  const txReceipt = await sendTransaction(cli.wallet, l1Gateway, 'outboundTransfer', txParams, {
-    value: ethValue,
-  })
+  const tx = await l1Gateway
+    .connect(cli.wallet)
+    .outboundTransfer(l1GRT.address, recipient, amount, maxGas, gasPriceBid, txData, {
+      value: ethValue,
+    })
+  const txReceipt = await cli.wallet.provider.waitForTransaction(tx.hash)
 
   // get l2 ticket status
   if (txReceipt.status == 1) {
@@ -121,10 +126,10 @@ export const sendToL2 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
 
 export const redeemSendToL2 = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   logger.info(`>>> Redeeming pending tokens on L2 <<<\n`)
-  const l2Provider = getProvider(cliArgs.l2ProviderUrl)
+  const l2Provider = new providers.JsonRpcProvider(cliArgs.l2ProviderUrl)
   const l2ChainId = (await l2Provider.getNetwork()).chainId
 
-  if (chainIdIsL2(cli.chainId) || !chainIdIsL2(l2ChainId)) {
+  if (isGraphL2ChainId(cli.chainId) || isGraphL1ChainId(l2ChainId)) {
     throw new Error(
       'Please use an L1 provider in --provider-url, and an L2 provider in --l2-provider-url',
     )

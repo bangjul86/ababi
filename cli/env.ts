@@ -1,11 +1,11 @@
-import { utils, BigNumber, Wallet, Overrides } from 'ethers'
+import { utils, BigNumber, Wallet, Overrides, providers } from 'ethers'
 import { Argv } from 'yargs'
 
 import { logger } from './logging'
-import { getAddressBook, AddressBook } from './address-book'
 import { defaultOverrides } from './defaults'
-import { getProvider } from './network'
-import { loadContracts, NetworkContracts } from './contracts'
+
+import { AddressBook, getAddressBook } from '../sdk/lib/deployment/address-book'
+import { loadGraphNetworkContracts, GraphNetworkContracts } from '../sdk/deployments/network'
 
 const { formatEther } = utils
 
@@ -19,7 +19,7 @@ export interface CLIEnvironment {
   walletAddress: string
   wallet: Wallet
   addressBook: AddressBook
-  contracts: NetworkContracts
+  contracts: GraphNetworkContracts
   argv: CLIArgs
 }
 
@@ -34,7 +34,7 @@ export const displayGasOverrides = (): Overrides => {
 export const loadEnv = async (argv: CLIArgs, wallet?: Wallet): Promise<CLIEnvironment> => {
   if (!wallet) {
     wallet = Wallet.fromMnemonic(argv.mnemonic, `m/44'/60'/0'/0/${argv.accountNumber}`).connect(
-      getProvider(argv.providerUrl),
+      new providers.JsonRpcProvider(argv.providerUrl),
     )
   }
 
@@ -43,7 +43,7 @@ export const loadEnv = async (argv: CLIArgs, wallet?: Wallet): Promise<CLIEnviro
   const nonce = await wallet.getTransactionCount()
   const walletAddress = await wallet.getAddress()
   const addressBook = getAddressBook(argv.addressBook, chainId.toString())
-  const contracts = loadContracts(addressBook, chainId, wallet)
+  const contracts = loadGraphNetworkContracts(argv.addressBook, chainId, wallet)
 
   logger.info(`Preparing contracts on chain id: ${chainId}`)
   logger.info(

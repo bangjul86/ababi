@@ -2,14 +2,14 @@ import { Contract, providers, Signer } from 'ethers'
 
 import { AddressBook } from '../address-book'
 import { loadArtifact } from '../artifacts'
-import { getWrappedConnect, wrapCalls } from './tx-logging'
+import { getWrappedConnect, wrapCalls } from './tx-log'
 
 export const getContractAt = (
-  name: string,
+  contractName: string,
   address: string,
   signerOrProvider?: Signer | providers.Provider,
 ): Contract => {
-  return new Contract(address, loadArtifact(name).abi, signerOrProvider)
+  return new Contract(address, loadArtifact(contractName).abi, signerOrProvider)
 }
 
 export function loadContract(

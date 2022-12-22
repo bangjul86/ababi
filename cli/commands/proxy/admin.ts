@@ -1,7 +1,7 @@
 import yargs, { Argv } from 'yargs'
 
 import { logger } from '../../logging'
-import { getContractAt, sendTransaction } from '../../network'
+import { getContractAt } from '../../../sdk/lib/deployment/contract'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { confirm } from '../../helpers'
 
@@ -39,11 +39,8 @@ export const setProxyAdmin = async (cli: CLIEnvironment, cliArgs: CLIArgs): Prom
   }
   const proxyAdmin = getContractAt('GraphProxyAdmin', proxyAdminEntry.address).connect(cli.wallet)
 
-  // Change proxy admin
-  await sendTransaction(cli.wallet, proxyAdmin, 'changeProxyAdmin', [
-    addressEntry.address,
-    adminAddress,
-  ])
+  // Change proxy admin)
+  await proxyAdmin.connect(cli.wallet).changeProxyAdmin(addressEntry.address, adminAddress)
   logger.info('Done')
 }
 

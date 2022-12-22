@@ -1,4 +1,4 @@
-import { constants, providers, utils } from 'ethers'
+import { constants, Contract, providers, utils } from 'ethers'
 import yargs, { Argv } from 'yargs'
 
 import { logger } from '../logging'
@@ -8,10 +8,9 @@ import {
   isContractDeployed,
   deployContractAndSave,
   deployContractWithProxyAndSave,
-  sendTransaction,
-} from '../network'
+} from '../../sdk/lib/deployment/deploy'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../env'
-import { chainIdIsL2 } from '../cross-chain'
+import { isGraphL2ChainId } from '../../sdk/lib/cross-chain'
 import { confirm } from '../helpers'
 
 const { EtherSymbol } = constants
@@ -75,7 +74,7 @@ export const migrate = async (
   if (chainId == 1337) {
     allContracts = ['EthereumDIDRegistry', ...allContracts]
     await setAutoMine(cli.wallet.provider as providers.JsonRpcProvider, true)
-  } else if (chainIdIsL2(chainId)) {
+  } else if (isGraphL2ChainId(chainId)) {
     allContracts = l2Contracts
   }
 
@@ -106,6 +105,7 @@ export const migrate = async (
     // Check if contract already deployed
     const isDeployed = await isContractDeployed(
       name,
+      'GraphProxy',
       savedAddress,
       cli.addressBook,
       cli.wallet.provider,
@@ -118,13 +118,24 @@ export const migrate = async (
 
     // Get config and deploy contract
     const contractConfig = getContractConfig(graphConfig, cli.addressBook, name, cli)
-    const deployFn = contractConfig.proxy ? deployContractWithProxyAndSave : deployContractAndSave
-    const contract = await deployFn(
-      name,
-      contractConfig.params.map((a) => a.value), // keep only the values
-      cli.wallet,
-      cli.addressBook,
-    )
+    let contract: Contract
+    if (contractConfig.proxy) {
+      contract = await deployContractWithProxyAndSave(
+        'GraphProxyAdmin',
+        name,
+        'GraphProxy',
+        contractConfig.params.map((a) => a.value), // keep only the values
+        cli.wallet,
+        cli.addressBook,
+      )
+    } else {
+      contract = await deployContractAndSave(
+        name,
+        contractConfig.params.map((a) => a.value), // keep only the values
+        cli.wallet,
+        cli.addressBook,
+      )
+    }
     logger.info('')
 
     // Defer contract calls after deploying every contract
@@ -146,12 +157,9 @@ export const migrate = async (
       logger.info(`= Config: ${entry.name}`)
       for (const call of entry.calls) {
         logger.info(`\n* Calling ${call.fn}:`)
-        await sendTransaction(
-          cli.wallet,
-          entry.contract,
-          call.fn,
-          loadCallParams(call.params, cli.addressBook, cli),
-        )
+        await entry.contract
+          .connect(cli.wallet)
+          [call.fn](...loadCallParams(call.params, cli.addressBook, cli))
       }
       logger.info('')
     }

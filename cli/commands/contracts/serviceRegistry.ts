@@ -1,7 +1,6 @@
 import yargs, { Argv } from 'yargs'
 
 import { logger } from '../../logging'
-import { sendTransaction } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 export const register = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -10,13 +9,13 @@ export const register = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
   const serviceRegistry = cli.contracts.ServiceRegistry
 
   logger.info(`Registering indexer ${cli.walletAddress} with url ${url} and geoHash ${geoHash}`)
-  await sendTransaction(cli.wallet, serviceRegistry, 'register', [url, geoHash])
+  await serviceRegistry.connect(cli.wallet).register(url, geoHash)
 }
 export const unregister = async (cli: CLIEnvironment): Promise<void> => {
   const serviceRegistry = cli.contracts.ServiceRegistry
 
   logger.info(`Unregistering indexer ${cli.walletAddress}`)
-  await sendTransaction(cli.wallet, serviceRegistry, 'unregister')
+  await serviceRegistry.connect(cli.wallet).unregister()
 }
 
 export const serviceRegistryCommand = {

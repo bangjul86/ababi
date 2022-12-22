@@ -2,7 +2,6 @@ import yargs, { Argv } from 'yargs'
 import { parseGRT } from '@graphprotocol/common-ts'
 
 import { logger } from '../../logging'
-import { sendTransaction } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 export const mint = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -11,7 +10,7 @@ export const mint = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void>
   const graphToken = cli.contracts.GraphToken
 
   logger.info(`Minting ${cliArgs.amount} tokens for spender ${account}...`)
-  await sendTransaction(cli.wallet, graphToken, 'mint', [account, amount])
+  await graphToken.connect(cli.wallet).mint(account, amount)
 }
 
 export const burn = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -19,7 +18,7 @@ export const burn = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void>
   const graphToken = cli.contracts.GraphToken
 
   logger.info(`Burning ${cliArgs.amount} tokens...`)
-  await sendTransaction(cli.wallet, graphToken, 'burn', [amount])
+  await graphToken.connect(cli.wallet).burn(amount)
 }
 
 export const transfer = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -28,7 +27,7 @@ export const transfer = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
   const graphToken = cli.contracts.GraphToken
 
   logger.info(`Transferring ${cliArgs.amount} tokens to spender ${account}...`)
-  await sendTransaction(cli.wallet, graphToken, 'transfer', [account, amount])
+  await graphToken.connect(cli.wallet).transfer(account, amount)
 }
 
 export const approve = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -37,7 +36,7 @@ export const approve = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<vo
   const graphToken = cli.contracts.GraphToken
 
   logger.info(`Approving ${cliArgs.amount} tokens for spender ${account} to spend...`)
-  await sendTransaction(cli.wallet, graphToken, 'approve', [account, amount])
+  await graphToken.connect(cli.wallet).approve(account, amount)
 }
 
 export const allowance = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {

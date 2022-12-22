@@ -2,10 +2,10 @@ import yargs, { Argv } from 'yargs'
 import { parseGRT } from '@graphprotocol/common-ts'
 
 import { logger } from '../../logging'
-import { sendTransaction } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 import { nameToNode } from './ens'
 import { IPFS, pinMetadataToIPFS, buildSubgraphID, ensureGRTAllowance } from '../../helpers'
+import { BytesLike } from 'ethers'
 
 export const setDefaultName = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const graphAccount = cliArgs.graphAccount
@@ -15,7 +15,7 @@ export const setDefaultName = async (cli: CLIEnvironment, cliArgs: CLIArgs): Pro
   const gns = cli.contracts.GNS
 
   logger.info(`Setting default name as ${name} for ${graphAccount}...`)
-  await sendTransaction(cli.wallet, gns, 'setDefaultName', [graphAccount, nameSystem, node, name])
+  await gns.connect(cli.wallet).setDefaultName(graphAccount, nameSystem, node, name)
 }
 
 export const publishNewSubgraph = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -30,11 +30,9 @@ export const publishNewSubgraph = async (cli: CLIEnvironment, cliArgs: CLIArgs):
   const gns = cli.contracts.GNS
 
   logger.info(`Publishing new subgraph for ${cli.walletAddress}...`)
-  await sendTransaction(cli.wallet, gns, 'publishNewSubgraph', [
-    subgraphDeploymentIDBytes,
-    versionHashBytes,
-    subgraphHashBytes,
-  ])
+  await gns
+    .connect(cli.wallet)
+    .publishNewSubgraph(subgraphDeploymentIDBytes, versionHashBytes, subgraphHashBytes)
 }
 
 export const publishNewVersion = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -48,18 +46,16 @@ export const publishNewVersion = async (cli: CLIEnvironment, cliArgs: CLIArgs): 
   const gns = cli.contracts.GNS
 
   logger.info(`Publishing new subgraph version for ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'publishNewVersion', [
-    subgraphID,
-    subgraphDeploymentIDBytes,
-    versionHashBytes,
-  ])
+  await gns
+    .connect(cli.wallet)
+    .publishNewVersion(subgraphID, subgraphDeploymentIDBytes, versionHashBytes)
 }
 
 export const deprecate = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const subgraphID = cliArgs.subgraphID
   const gns = cli.contracts.GNS
   logger.info(`Deprecating subgraph ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'deprecateSubgraph', [subgraphID])
+  await gns.connect(cli.wallet).deprecateSubgraph(subgraphID)
 }
 
 export const updateSubgraphMetadata = async (
@@ -73,7 +69,7 @@ export const updateSubgraphMetadata = async (
   const gns = cli.contracts.GNS
 
   logger.info(`Updating subgraph metadata for ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'updateSubgraphMetadata', [subgraphID, subgraphHashBytes])
+  await gns.connect(cli.wallet).updateSubgraphMetadata(subgraphID, subgraphHashBytes)
 }
 
 export const mintSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -82,7 +78,7 @@ export const mintSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise
   const gns = cli.contracts.GNS
 
   logger.info(`Minting signal for ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'mintSignal', [subgraphID, tokens, 0])
+  await gns.connect(cli.wallet).mintSignal(subgraphID, tokens, 0)
 }
 
 export const burnSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -91,7 +87,7 @@ export const burnSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise
   const gns = cli.contracts.GNS
 
   logger.info(`Burning signal from ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'burnSignal', [subgraphID, signal, 0])
+  await gns.connect(cli.wallet).burnSignal(subgraphID, signal, 0)
 }
 
 export const withdraw = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -99,7 +95,7 @@ export const withdraw = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<v
   const gns = cli.contracts.GNS
 
   logger.info(`Withdrawing locked GRT from subgraph ${subgraphID}...`)
-  await sendTransaction(cli.wallet, gns, 'withdraw', [subgraphID])
+  await gns.connect(cli.wallet).withdraw(subgraphID)
 }
 
 export const publishAndSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -137,7 +133,10 @@ export const publishAndSignal = async (cli: CLIEnvironment, cliArgs: CLIArgs): P
 
   // send multicall transaction
   logger.info(`Publishing and minting on new subgraph for ${cli.walletAddress}...`)
-  await sendTransaction(cli.wallet, GNS, 'multicall', [[publishTx.data, mintTx.data]])
+  const data: BytesLike[] = []
+  if (publishTx.data) data.push(publishTx.data)
+  if (mintTx.data) data.push(mintTx.data)
+  await GNS.connect(cli.wallet).multicall(data)
 }
 
 export const gnsCommand = {

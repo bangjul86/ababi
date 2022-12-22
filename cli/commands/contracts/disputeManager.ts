@@ -1,11 +1,11 @@
 import yargs, { Argv } from 'yargs'
-import { constants, utils, Wallet } from 'ethers'
+import { constants, providers, utils, Wallet } from 'ethers'
 import { createAttestation, Attestation, Receipt } from '@graphprotocol/common-ts'
 
+import { toGRT, randomHexBytes } from '../../../sdk/lib/utils'
+
 import { logger } from '../../logging'
-import { sendTransaction, getProvider, toGRT, randomHexBytes } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
-import { getChainID } from '../../network'
 
 const { HashZero } = constants
 const { defaultAbiCoder: abi, arrayify, concat, hexlify } = utils
@@ -16,14 +16,13 @@ interface ChannelKey {
   address: string
 }
 
-async function buildAttestation(receipt: Receipt, signer: string, disputeManagerAddress: string) {
-  const attestation = await createAttestation(
-    signer,
-    getChainID(),
-    disputeManagerAddress,
-    receipt,
-    '0',
-  )
+async function buildAttestation(
+  receipt: Receipt,
+  signer: string,
+  disputeManagerAddress: string,
+  chainId: number,
+) {
+  const attestation = await createAttestation(signer, chainId, disputeManagerAddress, receipt, '0')
   return attestation
 }
 
@@ -55,7 +54,7 @@ async function setupIndexer(
   accountIndex: number,
 ) {
   const indexer = Wallet.fromMnemonic(cliArgs.mnemonic, `m/44'/60'/0'/0/${accountIndex}`).connect(
-    getProvider(cliArgs.providerUrl),
+    new providers.JsonRpcProvider(cliArgs.providerUrl),
   )
 
   const grt = cli.contracts.GraphToken
@@ -66,18 +65,21 @@ async function setupIndexer(
   const metadata = HashZero
 
   logger.info('Transferring tokens to the indexer...')
-  await sendTransaction(cli.wallet, grt, 'transfer', [indexer.address, indexerTokens])
+  await grt.connect(cli.wallet).transfer(indexer.address, indexerTokens)
   logger.info('Approving the staking address to pull tokens...')
-  await sendTransaction(cli.wallet, grt, 'approve', [staking.address, indexerTokens])
+  await grt.connect(indexer).approve(staking.address, indexerTokens)
   logger.info('Staking...')
-  await sendTransaction(cli.wallet, staking, 'stake', [indexerTokens])
+  await staking.connect(indexer).stake(indexerTokens)
   logger.info('Allocating...')
-  await sendTransaction(cli.wallet, staking, 'allocate', [
-    receipt.subgraphDeploymentID,
-    indexerAllocatedTokens,
-    indexerChannelKey.address,
-    metadata,
-  ])
+  await staking
+    .connect(indexer)
+    .allocate(
+      receipt.subgraphDeploymentID,
+      indexerAllocatedTokens,
+      indexerChannelKey.address,
+      metadata,
+      '',
+    )
 }
 
 // This just creates any query dispute conflict to test the subgraph, no real data is sent
@@ -109,18 +111,19 @@ export const createTestQueryDisputeConflict = async (
     receipt1,
     indexer1ChannelKey.privKey,
     disputeManagerAddr,
+    cli.chainId,
   )
   const attestation2 = await buildAttestation(
     receipt2,
     indexer2ChannelKey.privKey,
     disputeManagerAddr,
+    cli.chainId,
   )
 
   logger.info(`Creating conflicting attestations...`)
-  await sendTransaction(cli.wallet, disputeManager, 'createQueryDisputeConflict', [
-    encodeAttestation(attestation1),
-    encodeAttestation(attestation2),
-  ])
+  await disputeManager
+    .connect(cli.wallet)
+    .createQueryDisputeConflict(encodeAttestation(attestation1), encodeAttestation(attestation2))
 }
 
 // This just creates any indexing dispute to test the subgraph, no real data is sent
@@ -146,34 +149,31 @@ export const createTestIndexingDispute = async (
   const grt = cli.contracts.GraphToken
 
   logger.info('Approving the dispute address to pull tokens...')
-  await sendTransaction(cli.wallet, grt, 'approve', [disputeManager.address, deposit])
+  await grt.connect(cli.wallet).approve(disputeManager.address, deposit)
 
   logger.info(`Creating indexing dispute...`)
-  await sendTransaction(cli.wallet, disputeManager, 'createIndexingDispute', [
-    indexerChannelKey.address,
-    deposit,
-  ])
+  await disputeManager.connect(cli.wallet).createIndexingDispute(indexerChannelKey.address, deposit)
 }
 
 export const accept = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const disputeManager = cli.contracts.DisputeManager
   const disputeID = cliArgs.disputeID
   logger.info(`Accepting...`)
-  await sendTransaction(cli.wallet, disputeManager, 'acceptDispute', ...[disputeID])
+  await disputeManager.connect(cli.wallet).acceptDispute(disputeID)
 }
 
 export const reject = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const disputeManager = cli.contracts.DisputeManager
   const disputeID = cliArgs.disputeID
   logger.info(`Rejecting...`)
-  await sendTransaction(cli.wallet, disputeManager, 'rejectDispute', ...[disputeID])
+  await disputeManager.connect(cli.wallet).rejectDispute(disputeID)
 }
 
 export const draw = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
   const disputeManager = cli.contracts.DisputeManager
   const disputeID = cliArgs.disputeID
   logger.info(`Drawing...`)
-  await sendTransaction(cli.wallet, disputeManager, 'drawDispute', ...[disputeID])
+  await disputeManager.connect(cli.wallet).drawDispute(disputeID)
 }
 
 export const disputeManagerCommand = {

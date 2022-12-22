@@ -2,7 +2,6 @@ import yargs, { Argv } from 'yargs'
 import { parseGRT } from '@graphprotocol/common-ts'
 
 import { logger } from '../../logging'
-import { sendTransaction } from '../../network'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 export const mint = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void> => {
@@ -13,9 +12,9 @@ export const mint = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void>
   const graphToken = cli.contracts.GraphToken
 
   logger.info('First calling approve() to ensure curation contract can call transferFrom()...')
-  await sendTransaction(cli.wallet, graphToken, 'approve', [curation.address, amount])
+  await graphToken.connect(cli.wallet).approve(curation.address, amount)
   logger.info(`Signaling on ${subgraphID} with ${cliArgs.amount} tokens...`)
-  await sendTransaction(cli.wallet, curation, 'mint', [subgraphID, amount, 0], {
+  await curation.connect(cli.wallet).mint(subgraphID, amount, 0, {
     gasLimit: 2000000,
   })
 }
@@ -25,7 +24,7 @@ export const burn = async (cli: CLIEnvironment, cliArgs: CLIArgs): Promise<void>
   const curation = cli.contracts.Curation
 
   logger.info(`Burning signal on ${subgraphID} with ${cliArgs.amount} tokens...`)
-  await sendTransaction(cli.wallet, curation, 'burn', [subgraphID, amount, 0])
+  await curation.connect(cli.wallet).burn(subgraphID, amount, 0)
 }
 
 export const curationCommand = {

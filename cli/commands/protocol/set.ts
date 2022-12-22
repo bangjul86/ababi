@@ -1,7 +1,7 @@
 import yargs, { Argv } from 'yargs'
 
 import { logger } from '../../logging'
-import { getContractAt, sendTransaction } from '../../network'
+import { getContractAt } from '../../../sdk/lib/deployment/contract'
 import { loadEnv, CLIArgs, CLIEnvironment } from '../../env'
 
 import { ProtocolFunction } from './index'
@@ -120,7 +120,7 @@ export const setProtocolParam = async (cli: CLIEnvironment, cliArgs: CLIArgs): P
 
   // Send tx
   const contract = getContractAt(fn.contract, addressEntry.address).connect(cli.wallet)
-  await sendTransaction(cli.wallet, contract, fn.name, parsedParams)
+  await contract.connect(cli.wallet)[fn.name](...parsedParams)
 }
 
 export const setCommand = {

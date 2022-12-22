@@ -1,6 +1,6 @@
 import { Contract, Overrides, Signer } from 'ethers'
 
-import { hashHexString } from '../utils'
+import { hashHexString } from '../../utils'
 import { getContractAt } from '../contract/contract'
 import { loadArtifact } from '../artifacts'
 import { AddressBook } from '../address-book'
@@ -52,6 +52,7 @@ export const deployContractWithProxy = async (
 }
 
 export const deployContractWithProxyAndSave = async (
+  proxyAdminName: string,
   name: string,
   proxyName: string,
   args: Array<ContractParam>,
@@ -62,12 +63,12 @@ export const deployContractWithProxyAndSave = async (
   if (!sender.provider) {
     throw Error('Sender must be connected to a provider')
   }
-  // Get the GraphProxyAdmin to own the GraphProxy for this contract
-  const proxyAdminEntry = addressBook.getEntry('GraphProxyAdmin')
+  // Get the proxy admin to own the proxy for this contract
+  const proxyAdminEntry = addressBook.getEntry(proxyAdminName)
   if (!proxyAdminEntry) {
-    throw new Error('GraphProxyAdmin not detected in the config, must be deployed first!')
+    throw new Error(`${proxyAdminName} not detected in the config, must be deployed first!`)
   }
-  const proxyAdmin = getContractAt('GraphProxyAdmin', proxyAdminEntry.address)
+  const proxyAdmin = getContractAt(proxyAdminName, proxyAdminEntry.address)
 
   // Deploy implementation
   const contract = await deployContractAndSave(name, [], sender, addressBook)
@@ -83,7 +84,7 @@ export const deployContractWithProxyAndSave = async (
   )
 
   // Overwrite address entry with proxy
-  const artifact = loadArtifact('GraphProxy')
+  const artifact = loadArtifact(proxyName)
   const contractEntry = addressBook.getEntry(name)
   addressBook.setEntry(name, {
     address: proxy.address,
@@ -100,6 +101,7 @@ export const deployContractWithProxyAndSave = async (
   return contract.attach(proxy.address)
 }
 
+// Wraps an existing contract with a proxy owned by the proxy admin
 const wrapContractWithProxy = async (
   proxyName: string,
   proxyAdmin: Contract,
