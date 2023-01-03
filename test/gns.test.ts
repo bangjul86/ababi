@@ -11,7 +11,7 @@ import { SubgraphNFT } from '../build/types/SubgraphNFT'
 import { getAccounts, randomHexBytes, Account, toGRT } from './lib/testHelpers'
 import { NetworkFixture } from './lib/fixtures'
 import { toBN, formatGRT } from './lib/testHelpers'
-import { getContractAt } from '../cli/network'
+import { getContractAt } from '../sdk/lib/deployment/contract'
 
 const { AddressZero, HashZero } = ethers.constants
 

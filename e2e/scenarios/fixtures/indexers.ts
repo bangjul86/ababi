@@ -1,6 +1,6 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumber } from 'ethers'
-import { toGRT } from '../../../cli/network'
+import { toGRT } from '../../../sdk/lib/utils'
 
 export interface IndexerFixture {
   signer: SignerWithAddress

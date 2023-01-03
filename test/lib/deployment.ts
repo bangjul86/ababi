@@ -2,7 +2,7 @@ import { Contract, Signer } from 'ethers'
 
 import { toBN, toGRT } from './testHelpers'
 import { logger } from '../../cli/logging'
-import { network } from '../../cli'
+import * as network from '../../sdk/lib/deployment/deploy'
 
 // Contracts definitions
 import { BancorFormula } from '../../build/types/BancorFormula'
@@ -66,7 +66,7 @@ export async function deployProxy(
   proxyAdmin: string,
   deployer: Signer,
 ): Promise<Contract> {
-  const deployResult = await network.deployProxy(implementation, proxyAdmin, deployer)
+  const deployResult = await network.deployProxy('GraphProxy', implementation, proxyAdmin, deployer)
   return deployResult.contract
 }
 
@@ -106,6 +106,7 @@ export async function deployCuration(
 
   // Deploy
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'Curation',
     [
@@ -128,6 +129,7 @@ export async function deployDisputeManager(
 ): Promise<DisputeManager> {
   // Deploy
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'DisputeManager',
     [
@@ -148,6 +150,7 @@ export async function deployEpochManager(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<EpochManager> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'EpochManager',
     [controller, defaults.epochs.lengthInBlocks],
@@ -171,6 +174,7 @@ export async function deployGNS(
 
   // Deploy
   const proxy = (await network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'GNS',
     [controller, bondingCurve.address, subgraphNFT.address],
@@ -191,6 +195,7 @@ export async function deployServiceRegistry(
 ): Promise<ServiceRegistry> {
   // Deploy
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'ServiceRegistry',
     [controller],
@@ -204,6 +209,7 @@ export async function deployStaking(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<Staking> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'Staking',
     [
@@ -229,6 +235,7 @@ export async function deployRewardsManager(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<RewardsManager> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'RewardsManager',
     [controller],
@@ -242,6 +249,7 @@ export async function deployGraphGovernance(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<GraphGovernance> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'GraphGovernance',
     [governor],
@@ -255,6 +263,7 @@ export async function deployL1GraphTokenGateway(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<L1GraphTokenGateway> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'L1GraphTokenGateway',
     [controller],
@@ -268,6 +277,7 @@ export async function deployBridgeEscrow(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<BridgeEscrow> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'BridgeEscrow',
     [controller],
@@ -281,6 +291,7 @@ export async function deployL2GraphTokenGateway(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<L2GraphTokenGateway> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'L2GraphTokenGateway',
     [controller],
@@ -293,6 +304,7 @@ export async function deployL2GRT(
   proxyAdmin: GraphProxyAdmin,
 ): Promise<L2GraphToken> {
   return network.deployContractWithProxy(
+    'GraphProxy',
     proxyAdmin,
     'L2GraphToken',
     [await deployer.getAddress()],

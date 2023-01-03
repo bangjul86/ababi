@@ -1,9 +1,9 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { AddressBook } from '../cli/address-book'
-import { NetworkContracts } from '../cli/contracts'
+import { AddressBook } from '../sdk/lib/deployment/address-book'
 
 import { EthersProviderWrapper } from '@nomiclabs/hardhat-ethers/internal/ethers-provider-wrapper'
 import { Wallet } from 'ethers'
+import { GraphNetworkContracts } from '../sdk/deployments/network'
 
 export interface GraphRuntimeEnvironmentOptions {
   addressBook?: string
@@ -35,7 +35,7 @@ export type NamedAccounts = {
 export interface GraphNetworkEnvironment {
   chainId: number
   provider: EthersProviderWrapper
-  contracts: NetworkContracts
+  contracts: GraphNetworkContracts
   graphConfig: any
   addressBook: AddressBook
   getNamedAccounts: () => Promise<NamedAccounts>

@@ -1,11 +1,11 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { BigNumberish, ethers } from 'ethers'
-import { NetworkContracts } from '../../../cli/contracts'
-import { randomHexBytes, sendTransaction } from '../../../cli/network'
+import { GraphNetworkContracts } from '../../../sdk/deployments/network'
+import { randomHexBytes } from '../../../sdk/lib/utils'
 import { ensureGRTAllowance } from './accounts'
 
 export const stake = async (
-  contracts: NetworkContracts,
+  contracts: GraphNetworkContracts,
   indexer: SignerWithAddress,
   amount: BigNumberish,
 ): Promise<void> => {
@@ -16,11 +16,11 @@ export const stake = async (
 
   // Stake
   console.log(`\nStaking ${ethers.utils.formatEther(amount)} tokens...`)
-  await sendTransaction(indexer, contracts.Staking, 'stake', [amount])
+  await contracts.Staking.connect(indexer).stake(amount)
 }
 
 export const allocateFrom = async (
-  contracts: NetworkContracts,
+  contracts: GraphNetworkContracts,
   indexer: SignerWithAddress,
   allocationSigner: SignerWithAddress,
   subgraphDeploymentID: string,
@@ -36,11 +36,13 @@ export const allocateFrom = async (
   const metadata = ethers.constants.HashZero
 
   console.log(`\nAllocating ${amount} tokens on ${allocationId}...`)
-  await sendTransaction(
-    indexer,
-    contracts.Staking,
-    'allocateFrom',
-    [indexer.address, subgraphDeploymentID, amount, allocationId, metadata, proof],
+  await contracts.Staking.connect(indexer).allocateFrom(
+    indexer.address,
+    subgraphDeploymentID,
+    amount,
+    allocationId,
+    metadata,
+    proof,
     {
       gasLimit: 4_000_000,
     },
@@ -48,14 +50,14 @@ export const allocateFrom = async (
 }
 
 export const closeAllocation = async (
-  contracts: NetworkContracts,
+  contracts: GraphNetworkContracts,
   indexer: SignerWithAddress,
   allocationId: string,
 ): Promise<void> => {
   const poi = randomHexBytes()
 
   console.log(`\nClosing ${allocationId}...`)
-  await sendTransaction(indexer, contracts.Staking, 'closeAllocation', [allocationId, poi], {
+  await contracts.Staking.connect(indexer).closeAllocation(allocationId, poi, {
     gasLimit: 4_000_000,
   })
 }
