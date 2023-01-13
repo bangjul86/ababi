@@ -161,7 +161,7 @@ contract GraphProxy is GraphProxyStorage, IGraphProxy {
     }
 
     /**
-     * @dev Admin function for new implementation to accept its role as implementation.
+     * @dev Admin function for new implementation to w its role as implementation.
      */
     function _acceptUpgrade() internal {
         address _pendingImplementation = _getPendingImplementation();

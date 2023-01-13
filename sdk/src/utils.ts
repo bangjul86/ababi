@@ -1,14 +1,9 @@
 import { BigNumber, Wallet } from 'ethers'
-import { hexlify, keccak256, parseUnits, randomBytes } from 'ethers/lib/utils'
+import { hexlify, parseUnits, randomBytes } from 'ethers/lib/utils'
 
 import { GraphToken } from '../../build/types/GraphToken'
 
-export const hashHexString = (input: string): string => keccak256(`0x${input.replace(/^0x/, '')}`)
 export const randomHexBytes = (n = 32): string => hexlify(randomBytes(n))
-
-export function assertObject(obj: unknown): asserts obj is Record<string, unknown> {
-  if (typeof obj !== 'object' || obj == null) throw new Error('Not an object')
-}
 
 export const toBN = (value: string | number | BigNumber): BigNumber => BigNumber.from(value)
 

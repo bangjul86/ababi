@@ -1,15 +1,24 @@
 import { L1ToL2MessageGasEstimator } from '@arbitrum/sdk'
-import { L1ToL2MessageNoGasParams } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageCreator'
-import { GasOverrides } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator'
-import { BigNumber, providers } from 'ethers'
 import { parseEther } from 'ethers/lib/utils'
 
-interface L2GasParams {
-  maxGas: BigNumber
-  gasPriceBid: BigNumber
-  maxSubmissionCost: BigNumber
-}
+import type { L1ToL2MessageNoGasParams } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageCreator'
+import type { GasOverrides } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator'
+import type { BigNumber, providers } from 'ethers'
+import type { L2GasParams } from './types'
 
+/**
+ * Estimate gas parameters for a retryable ticket creation
+ *
+ * @remark Uses Arbitrum's SDK to estimate the parameters
+ *
+ * @param l1Provider Provider for the L1 network (ethereum)
+ * @param l2Provider Provider for the L2 network (arbitrum)
+ * @param gatewayAddress Address where the tickets will be sent from in L1
+ * @param l2Dest Address of the destination in L2
+ * @param depositCalldata Calldata to be sent to L2
+ * @param opts Gas parameters to be used if not auto-estimated
+ * @returns estimated gas parameters
+ */
 export const estimateRetryableTxGas = async (
   l1Provider: providers.Provider,
   l2Provider: providers.Provider,
@@ -23,8 +32,6 @@ export const estimateRetryableTxGas = async (
     return opts
   }
 
-  // Comment from Offchain Labs' implementation:
-  // we add a 0.05 ether "deposit" buffer to pay for execution in the gas estimation
   console.info('Estimating retryable ticket gas:')
   const baseFee = (await l1Provider.getBlock('latest')).baseFeePerGas
   const gasEstimator = new L1ToL2MessageGasEstimator(l2Provider)
@@ -49,7 +56,6 @@ export const estimateRetryableTxGas = async (
     estimateOpts,
   )
 
-  // override fixed values
   return {
     maxGas: opts.maxGas ?? gasParams.gasLimit,
     gasPriceBid: opts.gasPriceBid ?? gasParams.maxFeePerGas,

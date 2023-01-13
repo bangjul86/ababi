@@ -1,9 +1,23 @@
 import fs from 'fs'
 import lodash from 'lodash'
-import { Contract, ContractFunction, ContractReceipt, ContractTransaction, Signer } from 'ethers'
-import { Provider } from '@ethersproject/providers'
 
-// Returns a contract connect function that wrapps contract calls with wrapCalls
+import type {
+  Contract,
+  ContractFunction,
+  ContractReceipt,
+  ContractTransaction,
+  Signer,
+} from 'ethers'
+import type { Provider } from '@ethersproject/providers'
+import type { ContractParam } from '../types'
+
+/**
+ * Modifies a contract connect function to return a contract wrapped with {@link wrapCalls}
+ *
+ * @param contract Contract to wrap
+ * @param contractName Name of the contract
+ * @returns the contract connect function
+ */
 export function getWrappedConnect(
   contract: Contract,
   contractName: string,
@@ -17,14 +31,25 @@ export function getWrappedConnect(
   return override
 }
 
-// Returns a contract with wrapped calls
-// The wrapper will run the tx, wait for confirmation and log the details
+/**
+ * Wraps contract calls with a modified call function that logs the tx details
+ *
+ * @remarks
+ * The override function will:
+ * 1. Make the contract call
+ * 2. Wait for tx confirmation using `provider.waitForTransaction()`
+ * 3. Log the tx details and the receipt details, both to the console and to a file
+ *
+ * @param contract Contract to be wrapped
+ * @param contractName Name of the contract
+ * @returns the wrapped contract
+ */
 export function wrapCalls(contract: Contract, contractName: string): Contract {
   const wrappedContract = lodash.cloneDeep(contract)
 
   for (const fn of Object.keys(contract.functions)) {
     const call: ContractFunction<ContractTransaction> = contract.functions[fn]
-    const override = async (...args: Array<any>): Promise<ContractTransaction> => {
+    const override = async (...args: Array<ContractParam>): Promise<ContractTransaction> => {
       // Make the call
       const tx = await call(...args)
       logContractCall(tx, contractName, fn, args)
@@ -48,7 +73,7 @@ function logContractCall(
   tx: ContractTransaction,
   contractName: string,
   fn: string,
-  args: Array<any>,
+  args: Array<ContractParam>,
 ) {
   const msg: string[] = []
   msg.push(`> Sent transaction ${contractName}.${fn}`)

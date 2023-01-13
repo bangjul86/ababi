@@ -1,11 +1,15 @@
 import { ContractFactory } from 'ethers'
-import { LinkReferences } from 'hardhat/types'
-import { loadArtifact } from '../artifacts'
+import { Artifact, Libraries } from 'hardhat/types'
+import { loadArtifact } from './artifacts'
 
-export const getContractFactory = (
-  name: string,
-  libraries?: { [libraryName: string]: string },
-): ContractFactory => {
+/**
+ * Gets a contract factory for a given contract name
+ *
+ * @param name Name of the contract
+ * @param libraries Libraries to link
+ * @returns the contract factory
+ */
+export const getContractFactory = (name: string, libraries?: Libraries): ContractFactory => {
   const artifact = loadArtifact(name)
   // Fixup libraries
   if (libraries && Object.keys(libraries).length > 0) {
@@ -14,13 +18,7 @@ export const getContractFactory = (
   return new ContractFactory(artifact.abi, artifact.bytecode)
 }
 
-const linkLibraries = (
-  artifact: {
-    bytecode: string
-    linkReferences?: LinkReferences
-  },
-  libraries?: { [libraryName: string]: string },
-): string => {
+const linkLibraries = (artifact: Artifact, libraries?: Libraries): string => {
   let bytecode = artifact.bytecode
 
   if (libraries) {

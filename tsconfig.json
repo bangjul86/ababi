@@ -15,6 +15,11 @@
     "test/**/*.ts",
     "tasks/**/*.ts",
     "e2e/**/*.ts",
-    "gre/**/*.ts"
-  ]
+    "gre/**/*.ts",
+    "sdk/**/*.ts"
+  ],
+  "typedocOptions": {
+    "entryPoints": ["./sdk/src/index.ts"],
+    "out": "docs"
+  }
 }
